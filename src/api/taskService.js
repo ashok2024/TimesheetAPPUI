@@ -13,7 +13,18 @@ export const getTasks = async () => {
         return [];
     }
 };
-
+export const getPaginatedTasksByProjectId = async (projectId, page = 1, pageSize = 10) => {
+    try {
+        const response = await axiosInstance.get(`/Task/project/${projectId}/paginated?page=${page}&pageSize=${pageSize}`);
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching paginated tasks:", error);
+        if (error.response?.status === 401) {
+            window.location.href = "/authentication/sign-in";
+        }
+        return { data: [], totalCount: 0 };
+    }
+};
 // GET: /api/Task/{id}
 export const getTaskById = async (id) => {
     try {

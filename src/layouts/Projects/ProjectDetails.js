@@ -11,13 +11,14 @@ import MDButton from "components/MDButton";
 import DataTable from "examples/Tables/DataTable";
 
 import { getProjectById } from "api/projectService";
-import { getTasksByProjectId, deleteTask } from "api/taskService";
+import { getTasksByProjectId, deleteTask, getPaginatedTasksByProjectId } from "api/taskService";
 
 import TaskModal from "./TaskModal";
 import ViewTaskModal from "./ViewTaskModal";
 import AddTimesheetModal from "./AddTimesheetModal";
 import ViewLogsModal from "./ViewLogsModal";
 import Tooltip from "@mui/material/Tooltip";
+import SharedPagination from "../../components/Shared/SharedPagination";
 function ProjectDetails() {
     const { id: projectIdParam } = useParams();
     const projectId = parseInt(projectIdParam, 10);
@@ -29,6 +30,9 @@ function ProjectDetails() {
     const [openViewModal, setOpenViewModal] = useState(false);
     const [openTimesheetModal, setOpenTimesheetModal] = useState(false);
     const [openLogsModal, setOpenLogsModal] = useState(false);
+    const [page, setPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
+    const [totalCount, setTotalCount] = useState(0);
 
     const fetchProject = async () => {
         try {
@@ -41,17 +45,20 @@ function ProjectDetails() {
 
     const fetchTasks = async () => {
         try {
-            const data = await getTasksByProjectId(projectId);
-            setTasks(data);
+            const result = await getPaginatedTasksByProjectId(projectId, page, pageSize);
+            debugger;
+            setTasks(result.data);
+            debugger;
+            setTotalCount(result.total);
         } catch (err) {
-            console.error("Error fetching tasks:", err);
+            console.error("Error fetching paginated tasks:", err);
         }
     };
 
     useEffect(() => {
-        fetchProject();
         fetchTasks();
-    }, [projectId]);
+        fetchProject();
+    }, [projectId, page, pageSize]);
 
     const handleTaskAction = (action, taskId) => {
         if (action === "view") {
@@ -174,11 +181,22 @@ function ProjectDetails() {
                     </MDBox>
                     <DataTable
                         table={{ columns, rows: tasks }}
-                        isSorted={false}
+                        isSorted={true}
                         entriesPerPage={false}
                         showTotalEntries={false}
                         noEndBorder
                     />
+                    <MDBox mt={1} mx={1}>
+                        <hr style={{ borderTop: "1px solid #e0e0e0" }} />
+                    </MDBox>
+                    <MDBox px={1} py={1}>
+                        <SharedPagination
+                            totalCount={totalCount}
+                            pageSize={pageSize}
+                            currentPage={page}
+                            onPageChange={(newPage) => setPage(newPage)}
+                        />
+                    </MDBox>
                 </Card>
 
                 {/* Task Create/Edit Modal */}

@@ -1,16 +1,17 @@
 import axiosInstance from "../utils/axiosInstance";
 
 //  GET: /api/Projects
-export const getProjects = async () => {
+export const getProjects = async (page = 1, pageSize = 10) => {
   try {
-    const response = await axiosInstance.get("/Projects");
-    return response.data;
+    const response = await axiosInstance.get(`/Projects/paginated?page=${page}&pageSize=${pageSize}`);
+    const { data, total } = response.data;
+    return { data, totalCount: total };
   } catch (error) {
-    console.error("Error fetching projects:", error);
+    console.error("Error fetching paginated projects:", error);
     if (error.response?.status === 401) {
       window.location.href = "/authentication/sign-in";
     }
-    return [];
+    return { data: [], totalCount: 0 };
   }
 };
 

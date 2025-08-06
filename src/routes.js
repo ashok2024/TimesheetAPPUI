@@ -82,7 +82,7 @@ const routes = [
     component: <ProjectDetails />,
   },
   {
-    type: "collapse",
+    type: "route",
     name: "Log Out",
     key: "sign-in",
     icon: <Icon fontSize="small">logout</Icon>,

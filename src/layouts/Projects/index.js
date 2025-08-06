@@ -11,7 +11,9 @@ import {
   FormControl,
   InputLabel,
 } from "@mui/material";
-
+import IconButton from "@mui/material/IconButton";
+import CloseIcon from "@mui/icons-material/Close";
+import SharedPagination from "components/Shared/SharedPagination";
 import MDBox from "components/MDBox";
 import MDTypography from "components/MDTypography";
 import MDButton from "components/MDButton";
@@ -28,6 +30,7 @@ import {
   deleteProject,
 } from "api/projectService";
 import { getUsers } from "api/userService";
+import GlobalFilterBar from "components/Shared/GlobalFilterBar";
 
 // Shared Modal style
 const modalStyle = {
@@ -44,15 +47,16 @@ const modalStyle = {
 };
 
 function ActionCell({ row, onView, onEdit, onDelete }) {
+  debugger;
   return (
     <MDBox display="flex" gap={1}>
-      <Icon fontSize="small" color="info" style={{ cursor: "pointer" }} onClick={() => onView(row.original.id)}>
+      <Icon fontSize="small" color="info" style={{ cursor: "pointer" }} onClick={() => onView(row.original.actions)}>
         visibility
       </Icon>
-      <Icon fontSize="small" color="warning" style={{ cursor: "pointer" }} onClick={() => onEdit(row.original.id)}>
+      <Icon fontSize="small" color="warning" style={{ cursor: "pointer" }} onClick={() => onEdit(row.original.actions)}>
         edit
       </Icon>
-      <Icon fontSize="small" color="error" style={{ cursor: "pointer" }} onClick={() => onDelete(row.original.id)}>
+      <Icon fontSize="small" color="error" style={{ cursor: "pointer" }} onClick={() => onDelete(row.original.actions)}>
         delete
       </Icon>
     </MDBox>
@@ -76,11 +80,13 @@ function Projects() {
   const [viewOpen, setViewOpen] = useState(false);
   const [isEdit, setIsEdit] = useState(false);
   const [editProjectId, setEditProjectId] = useState(null);
+  const [projects, setProjects] = useState([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [page, setPage] = useState(1);
+  const pageSize = 10;
   const [selectedProject, setSelectedProject] = useState(null);
-
   const [allUsers, setAllUsers] = useState([]);
   const navigate = useNavigate();
-
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -110,26 +116,26 @@ function Projects() {
   useEffect(() => {
     fetchProjects();
     fetchAllUsers();
-  }, []);
+  }, [page]);
 
   const fetchProjects = async () => {
-    try {
-      const projects = await getProjects();
-      const formatted = projects.map((p) => ({
-        id: p.id,
-        name: p.name,
-        description: p.description,
-        startDate: p.startDate?.slice(0, 10),
-        endDate: p.endDate?.slice(0, 10),
-        assignedUsers: p.users?.map((u) => u.fullName).join(", ") || "—",
-        users: p.users,
-      }));
-      setRows(formatted);
-    } catch (err) {
-      console.error(err);
-    }
-  };
+    const { data, totalCount } = await getProjects(page, pageSize);
 
+    setProjects(data); // keep the raw project data
+    setTotalCount(totalCount);
+
+    // map project data to match table row format
+    const transformedRows = data.map((proj) => ({
+      name: proj.name,
+      description: proj.description,
+      startDate: new Date(proj.startDate).toLocaleDateString(),
+      endDate: new Date(proj.endDate).toLocaleDateString(),
+      assignedUsers: proj.users?.map((u) => u.fullName).join(", ") || "—",
+      actions: proj.id, // placeholder for ActionCell
+    }));
+
+    setRows(transformedRows);
+  };
   const fetchAllUsers = async () => {
     try {
       const users = await getUsers();
@@ -142,10 +148,15 @@ function Projects() {
   const validate = () => {
     const errors = {};
     if (!formData.name) errors.name = "Project name is required";
+    if (!formData.startDate) errors.startDate = "Start date is required";
+    if (!formData.endDate) errors.endDate = "End date is required";
+    if (!formData.userIds || formData.userIds.length === 0) {
+      errors.userIds = "At least one user must be assigned";
+    }
+
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
-
   const handleInputChange = (field) => (e) => {
     const value = e.target.value;
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -219,7 +230,19 @@ function Projects() {
       console.error(err);
     }
   };
-
+  const handleClose = () => {
+    setOpenForm(false);
+    setFormErrors({});
+    if (!isEdit) {
+      setFormData({
+        name: "",
+        description: "",
+        startDate: "",
+        endDate: "",
+        userIds: [],
+      });
+    }
+  };
   return (
     <DashboardLayout>
       <DashboardNavbar />
@@ -252,21 +275,39 @@ function Projects() {
           <MDBox pt={3}>
             <DataTable
               table={{ columns, rows }}
-              isSorted={false}
+              isSorted={true}
               entriesPerPage={false}
               showTotalEntries={false}
               noEndBorder
             />
           </MDBox>
+          <MDBox mt={1} mx={1}>
+            <hr style={{ borderTop: "1px solid #e0e0e0" }} />
+          </MDBox>
+          <MDBox px={1} py={1}>
+            <SharedPagination
+              totalCount={totalCount}
+              pageSize={pageSize}
+              currentPage={page}
+              onPageChange={(newPage) => setPage(newPage)}
+            />
+          </MDBox>
         </Card>
+
+
       </MDBox>
 
       {/* Add/Edit Modal */}
-      <Modal open={openForm} onClose={() => setOpenForm(false)}>
+      <Modal open={openForm} onClose={handleClose}>
         <MDBox sx={modalStyle} component="form" onSubmit={handleFormSubmit}>
+          <IconButton onClick={handleClose} sx={{ position: "absolute", top: 8, right: 8 }}>
+            <CloseIcon />
+          </IconButton>
+
           <MDTypography variant="h5" mb={2}>
             {isEdit ? "Update Project" : "Create Project"}
           </MDTypography>
+
           <Grid container spacing={2}>
             <Grid item xs={12}>
               <MDInput
@@ -275,9 +316,15 @@ function Projects() {
                 fullWidth
                 value={formData.name}
                 onChange={handleInputChange("name")}
+                error={!!formErrors.name}
               />
-              {formErrors.name && <MDTypography color="error">{formErrors.name}</MDTypography>}
+              {formErrors.name && (
+                <MDTypography variant="caption" color="error">
+                  {formErrors.name}
+                </MDTypography>
+              )}
             </Grid>
+
             <Grid item xs={12}>
               <MDInput
                 label="Description"
@@ -287,6 +334,7 @@ function Projects() {
                 onChange={handleInputChange("description")}
               />
             </Grid>
+
             <Grid item xs={6}>
               <MDInput
                 label="Start Date"
@@ -296,8 +344,15 @@ function Projects() {
                 InputLabelProps={{ shrink: true }}
                 value={formData.startDate}
                 onChange={handleInputChange("startDate")}
+                error={!!formErrors.startDate}
               />
+              {formErrors.startDate && (
+                <MDTypography variant="caption" color="error">
+                  {formErrors.startDate}
+                </MDTypography>
+              )}
             </Grid>
+
             <Grid item xs={6}>
               <MDInput
                 label="End Date"
@@ -307,10 +362,17 @@ function Projects() {
                 InputLabelProps={{ shrink: true }}
                 value={formData.endDate}
                 onChange={handleInputChange("endDate")}
+                error={!!formErrors.endDate}
               />
+              {formErrors.endDate && (
+                <MDTypography variant="caption" color="error">
+                  {formErrors.endDate}
+                </MDTypography>
+              )}
             </Grid>
+
             <Grid item xs={12}>
-              <FormControl fullWidth>
+              <FormControl fullWidth error={!!formErrors.userIds}>
                 <InputLabel id="users-label">Assign Users</InputLabel>
                 <Select
                   labelId="users-label"
@@ -323,10 +385,7 @@ function Projects() {
                       .map((u) => u.fullName)
                       .join(", ")
                   }
-                  sx={{
-                    mt: 1,
-                    lineHeight: "3.4375em",
-                  }}
+                  sx={{ mt: 1, lineHeight: "3.4375em" }}
                 >
                   {allUsers.map((u) => (
                     <MenuItem key={u.id} value={u.id}>
@@ -334,9 +393,15 @@ function Projects() {
                     </MenuItem>
                   ))}
                 </Select>
+                {formErrors.userIds && (
+                  <MDTypography variant="caption" color="error">
+                    {formErrors.userIds}
+                  </MDTypography>
+                )}
               </FormControl>
             </Grid>
           </Grid>
+
           <MDBox mt={3} display="flex" justifyContent="flex-end">
             <MDButton type="submit" color="info">
               {isEdit ? "Update" : "Create"}

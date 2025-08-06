@@ -13,9 +13,10 @@ import MDInput from "components/MDInput";
 import DataTable from "examples/Tables/DataTable";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import DashboardNavbar from "examples/Navbars/DashboardNavbar";
-
-import { getUsers, getUserById, addUser, updateUser, deleteUser } from "api/userService";
-
+import SharedPagination from "../../components/Shared/SharedPagination";
+import { getUsers, getUserById, addUser, updateUser, deleteUser, getUsersPaginated } from "api/userService";
+import CloseIcon from "@mui/icons-material/Close";
+import IconButton from "@mui/material/IconButton";
 const modalStyle = {
   position: "absolute",
   top: "50%",
@@ -77,7 +78,9 @@ function Tables() {
   const [isEdit, setIsEdit] = useState(false);
   const [editUserId, setEditUserId] = useState(null);
   const [selectedUser, setSelectedUser] = useState(null);
-
+  const [totalCount, setTotalCount] = useState(0);
+  const [page, setPage] = useState(1);
+  const pageSize = 10;
   const [formData, setFormData] = useState({
     fullName: "",
     empId: "",
@@ -111,11 +114,12 @@ function Tables() {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [page]);
 
   const fetchData = async () => {
-    const users = await getUsers();
-    setRows(users);
+    const { data, totalCount } = await getUsersPaginated(page, pageSize); // use paginated API
+    setRows(data);
+    setTotalCount(totalCount);
   };
 
   const validate = () => {
@@ -222,6 +226,19 @@ function Tables() {
       alert("Failed to delete user. Please try again.");
     }
   };
+  const handleClose = () => {
+    setOpen(false);
+    setFormErrors({});
+    setFormData({
+      fullName: "",
+      empId: "",
+      email: "",
+      phoneNumber: "",
+      department: "",
+      dateOfJoining: "",
+      role: "",
+    });
+  };
 
   return (
     <DashboardLayout>
@@ -257,10 +274,21 @@ function Tables() {
               <MDBox pt={3}>
                 <DataTable
                   table={{ columns, rows }}
-                  isSorted={false}
+                  isSorted={true}
                   entriesPerPage={false}
                   showTotalEntries={false}
                   noEndBorder
+                />
+              </MDBox>
+              <MDBox mt={1} mx={1}>
+                <hr style={{ borderTop: "1px solid #e0e0e0" }} />
+              </MDBox>
+              <MDBox px={1} py={1}>
+                <SharedPagination
+                  totalCount={totalCount}
+                  pageSize={pageSize}
+                  currentPage={page}
+                  onPageChange={(newPage) => setPage(newPage)}
                 />
               </MDBox>
             </Card>
@@ -269,12 +297,20 @@ function Tables() {
       </MDBox>
 
       {/* Create / Update Modal */}
-      <Modal open={open} onClose={() => setOpen(false)}>
-        <MDBox sx={modalStyle} component="form" onSubmit={handleFormSubmit}>
+      <Modal open={open} onClose={handleClose}>
+        <MDBox sx={modalStyle} component="form" onSubmit={handleFormSubmit} position="relative">
+          {/* Close Button */}
+          <IconButton
+            onClick={handleClose}
+            sx={{ position: "absolute", top: 8, right: 8 }}
+          >
+            <CloseIcon />
+          </IconButton>
+
           <MDTypography variant="h5" mb={2}>
             {isEdit ? "Update User" : "Create New User"}
           </MDTypography>
-          
+
           <Grid container spacing={2}>
             {["fullName", "empId", "email", "phoneNumber", "department", "dateOfJoining"].map((field) => (
               <Grid item xs={12} key={field}>
@@ -294,6 +330,7 @@ function Tables() {
                 )}
               </Grid>
             ))}
+
             <Grid item xs={12}>
               <MDTypography variant="caption" fontWeight="medium" mb={1}>
                 Role
@@ -320,6 +357,7 @@ function Tables() {
               )}
             </Grid>
           </Grid>
+
           <MDBox mt={3} display="flex" justifyContent="flex-end">
             <MDButton type="submit" color="info">
               {isEdit ? "Update User" : "Save User"}
@@ -327,7 +365,6 @@ function Tables() {
           </MDBox>
         </MDBox>
       </Modal>
-
       {/* View Modal */}
       <Modal open={viewOpen} onClose={() => setViewOpen(false)}>
         <MDBox sx={modalStyle}>

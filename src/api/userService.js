@@ -13,7 +13,19 @@ export const getUsers = async () => {
     return [];
   }
 };
-
+export const getUsersPaginated = async (page = 1, pageSize = 10) => {
+  try {
+    const response = await axiosInstance.get(`/User/paginated?page=${page}&pageSize=${pageSize}`);
+    const { data, total } = response.data;
+    return { data, totalCount: total };
+  } catch (error) {
+    console.error("Error fetching paginated users:", error);
+    if (error.response?.status === 401) {
+      window.location.href = "/authentication/sign-in";
+    }
+    return { data: [], totalCount: 0 };
+  }
+};
 export const addUser = async (userData) => {
   try {
     const response = await axiosInstance.post("/User/AddUser", userData);

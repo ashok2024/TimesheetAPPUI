@@ -25,7 +25,7 @@ import BasicLayout from "layouts/authentication/components/BasicLayout";
 
 // Context and API
 import { AuthContext } from "context/AuthContext";
-import { login as loginAPI } from "api/auth";
+import { loginAPI } from "api/auth";
 
 // Images
 import bgImage from "assets/images/bg-sign-in-basic.jpeg";
@@ -49,6 +49,7 @@ function Basic() {
       const res = await loginAPI(username, password);
       debugger;
       //login(res.data.token);
+     // login(res.data.token);
       localStorage.setItem("token", res.data.token); // Save token in context
       navigate("/dashboard"); // Navigate to dashboard
     } catch (err) {
