@@ -1,6 +1,6 @@
 import { jwtDecode } from 'jwt-decode';
 
-export const decodeToken = (token) => {
+export const getUserRoleFromUtils = (token) => {
   try {
     return jwtDecode(token);
   } catch (err) {

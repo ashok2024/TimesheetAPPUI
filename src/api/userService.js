@@ -74,5 +74,28 @@ export const deleteUser = async (id) => {
     throw error;
   }
 };
-// 👇 Add one blank line here (just hit Enter)
+
+export const exportUsersToCsv = async () => {
+  try {
+    const response = await axiosInstance.get("/User/ExportCsv", {
+      responseType: "blob", // Important to handle file download
+    });
+    return response;
+  } catch (error) {
+    console.error("Error exporting CSV:", error);
+    throw error;
+  }
+};
+export const getUsersByProjectId = async (projectId) => {
+  try {
+    const response = await axiosInstance.get(`/User/by-project/${projectId}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching users by project ID:", error);
+    if (error.response?.status === 401) {
+      window.location.href = "/authentication/sign-in";
+    }
+    return [];
+  }
+};
 

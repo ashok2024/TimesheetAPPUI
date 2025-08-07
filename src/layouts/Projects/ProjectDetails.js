@@ -33,11 +33,13 @@ function ProjectDetails() {
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
     const [totalCount, setTotalCount] = useState(0);
-
+    const [users, setUsers] = useState([]);
     const fetchProject = async () => {
         try {
             const data = await getProjectById(projectId);
             setProject(data);
+            const assignedUsers = await getUsersByProjectId(id);
+            setUsers(assignedUsers);
         } catch (err) {
             console.error("Error fetching project:", err);
         }

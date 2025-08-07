@@ -14,7 +14,7 @@ import DataTable from "examples/Tables/DataTable";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import SharedPagination from "../../components/Shared/SharedPagination";
-import { getUsers, getUserById, addUser, updateUser, deleteUser, getUsersPaginated } from "api/userService";
+import { getUsers, getUserById, addUser, updateUser, deleteUser, getUsersPaginated, exportUsersToCsv } from "api/userService";
 import CloseIcon from "@mui/icons-material/Close";
 import IconButton from "@mui/material/IconButton";
 const modalStyle = {
@@ -239,7 +239,22 @@ function Tables() {
       role: "",
     });
   };
+  const handleExportCsv = async () => {
+    try {
+      const response = await exportUsersToCsv();
+      const blob = new Blob([response.data], { type: "text/csv" });
+      const url = window.URL.createObjectURL(blob);
 
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", "users_export.csv");
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (error) {
+      alert("Failed to export CSV");
+    }
+  };
   return (
     <DashboardLayout>
       <DashboardNavbar />
@@ -263,13 +278,22 @@ function Tables() {
                 <MDTypography variant="h6" color="white">
                   Users
                 </MDTypography>
-                <Button
-                  onClick={handleOpen}
-                  variant="contained"
-                  sx={{ backgroundColor: "#fff", color: "#1A73E8", fontWeight: "bold" }}
-                >
-                  Add User
-                </Button>
+                <MDBox display="flex" gap={2}>
+                  <Button
+                    onClick={handleOpen}
+                    variant="contained"
+                    sx={{ backgroundColor: "#fff", color: "#1A73E8", fontWeight: "bold" }}
+                  >
+                    Add User
+                  </Button>
+                  <Button
+                    onClick={handleExportCsv}
+                    variant="contained"
+                    sx={{ backgroundColor: "#fff", color: "#1A73E8", fontWeight: "bold" }}
+                  >
+                    Export CSV
+                  </Button>
+                </MDBox>
               </MDBox>
               <MDBox pt={3}>
                 <DataTable

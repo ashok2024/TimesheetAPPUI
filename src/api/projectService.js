@@ -88,3 +88,10 @@ export const deleteProject = async (id) => {
     throw error;
   }
 };
+export const exportProjectsCsv = async (filters) => {
+  const queryParams = new URLSearchParams(filters).toString();
+  const response = await axiosInstance.get(`/projects/export-csv?${queryParams}`, {
+    responseType: "blob",
+  });
+  return response;
+};

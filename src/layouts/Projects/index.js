@@ -28,11 +28,11 @@ import {
   addProject,
   updateProject,
   deleteProject,
-  getFilteredProjects,
+  getFilteredProjects,exportProjectsCsv,
 } from "api/projectService";
-import { getUsers } from "api/userService";
+import { getUsers,getUsersByProjectId } from "api/userService";
 import GlobalFilterBar from "components/Shared/GlobalFilterBar";
-
+import { saveAs } from "file-saver";
 // Shared Modal style
 const modalStyle = {
   position: "absolute",
@@ -264,7 +264,15 @@ function Projects() {
     setTempFilters({});
     setFilters({});
   };
-
+const handleExportCsv = async () => {
+  try {
+    const response = await exportProjectsCsv(filters); // filters = { name, startDate, endDate }
+    const blob = new Blob([response.data], { type: "text/csv;charset=utf-8" });
+    saveAs(blob, "projects_export.csv");
+  } catch (error) {
+    console.error("CSV Export Failed:", error);
+  }
+};
   return (
     <DashboardLayout>
       <DashboardNavbar />
@@ -333,13 +341,23 @@ function Projects() {
             <MDTypography variant="h6" color="white">
               Projects
             </MDTypography>
-            <Button
-              onClick={handleOpenForm}
-              variant="contained"
-              sx={{ backgroundColor: "#fff", color: "#1A73E8", fontWeight: "bold" }}
-            >
-              Add Project
-            </Button>
+
+            <MDBox display="flex" gap={2}>
+              <Button
+                onClick={handleOpenForm}
+                variant="contained"
+                sx={{ backgroundColor: "#fff", color: "#1A73E8", fontWeight: "bold" }}
+              >
+                Add Project
+              </Button>
+              <Button
+                onClick={handleExportCsv}
+                variant="contained"
+                sx={{ backgroundColor: "#fff", color: "#1A73E8", fontWeight: "bold" }}
+              >
+                Export CSV
+              </Button>
+            </MDBox>
           </MDBox>
           <MDBox pt={3}>
             <DataTable

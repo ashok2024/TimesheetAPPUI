@@ -179,13 +179,13 @@ export default function App() {
           <Sidenav
             color={sidenavColor}
             brand={(transparentSidenav && !darkMode) || whiteSidenav ? brandDark : brandWhite}
-            brandName="Material Dashboard 2"
+            brandName="TimeSheet"
             routes={routes}
             onMouseEnter={handleOnMouseEnter}
             onMouseLeave={handleOnMouseLeave}
+            onClick={(e) => e.preventDefault()}
           />
-          <Configurator />
-          {configsButton}
+          <Configurator />          
         </>
       )}
       {layout === "vr" && <Configurator />}

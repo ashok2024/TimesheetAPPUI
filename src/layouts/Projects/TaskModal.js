@@ -20,7 +20,7 @@ import {
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import { getTaskById, addTask, updateTask } from "api/taskService";
-import { getUsers } from "api/userService";
+import { getUsers,getUsersByProjectId } from "api/userService";
 import { useSnackbar } from "notistack";
 import { Divider } from "@mui/material";
 
@@ -43,8 +43,10 @@ function TaskModal({ open, onClose, projectId, taskId }) {
 
     const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
     const fetchUsers = async () => {
-        const data = await getUsers();
-        setUsers(data);
+        //const data = await getUsers();
+            const assignedUsers = await getUsersByProjectId(projectId);
+            setUsers(assignedUsers);
+            // setUsers(data);
     };
 
     const fetchTask = async () => {
