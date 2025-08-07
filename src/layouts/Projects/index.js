@@ -28,6 +28,7 @@ import {
   addProject,
   updateProject,
   deleteProject,
+  getFilteredProjects,
 } from "api/projectService";
 import { getUsers } from "api/userService";
 import GlobalFilterBar from "components/Shared/GlobalFilterBar";
@@ -47,7 +48,7 @@ const modalStyle = {
 };
 
 function ActionCell({ row, onView, onEdit, onDelete }) {
-  debugger;
+
   return (
     <MDBox display="flex" gap={1}>
       <Icon fontSize="small" color="info" style={{ cursor: "pointer" }} onClick={() => onView(row.original.actions)}>
@@ -87,6 +88,8 @@ function Projects() {
   const [selectedProject, setSelectedProject] = useState(null);
   const [allUsers, setAllUsers] = useState([]);
   const navigate = useNavigate();
+  const [filters, setFilters] = useState({});
+  const [tempFilters, setTempFilters] = useState({});
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -116,26 +119,35 @@ function Projects() {
   useEffect(() => {
     fetchProjects();
     fetchAllUsers();
-  }, [page]);
+  }, [page, filters]);
 
-  const fetchProjects = async () => {
-    const { data, totalCount } = await getProjects(page, pageSize);
+  const fetchProjects = async (filtersOverride = filters) => {
+    let response;
 
-    setProjects(data); // keep the raw project data
+    const activeFilters = filtersOverride;
+    if (activeFilters && Object.values(activeFilters).some(val => val?.trim() !== "")) {
+      response = await getFilteredProjects(page, pageSize, activeFilters);
+    } else {
+      response = await getProjects(page, pageSize);
+    }
+    debugger;
+    const { data, totalCount } = response;
+    setProjects(data);
     setTotalCount(totalCount);
 
-    // map project data to match table row format
     const transformedRows = data.map((proj) => ({
       name: proj.name,
       description: proj.description,
       startDate: new Date(proj.startDate).toLocaleDateString(),
       endDate: new Date(proj.endDate).toLocaleDateString(),
       assignedUsers: proj.users?.map((u) => u.fullName).join(", ") || "—",
-      actions: proj.id, // placeholder for ActionCell
+      actions: proj.id,
     }));
 
     setRows(transformedRows);
   };
+
+
   const fetchAllUsers = async () => {
     try {
       const users = await getUsers();
@@ -243,9 +255,66 @@ function Projects() {
       });
     }
   };
+  const handleSearch = () => {
+    debugger;
+    setFilters(tempFilters);
+    fetchProjects(tempFilters); // Uses latest filters directly
+  };
+  const handleReset = () => {
+    setTempFilters({});
+    setFilters({});
+  };
+
   return (
     <DashboardLayout>
       <DashboardNavbar />
+      <Card sx={{ mb: 2 }}>
+        <MDBox p={2}>
+          <Grid container spacing={2}>
+            <Grid item xs={12} md={4}>
+              <MDInput
+                label="Project Name"
+                fullWidth
+                value={tempFilters.name || ""}
+                onChange={(e) => setTempFilters({ ...tempFilters, name: e.target.value })}
+              />
+            </Grid>
+            <Grid item xs={12} md={3}>
+              <MDInput
+                type="date"
+                label="Start Date"
+                fullWidth
+                InputLabelProps={{ shrink: true }}
+                value={tempFilters.startDate || ""}
+                onChange={(e) => setTempFilters({ ...tempFilters, startDate: e.target.value })}
+              />
+            </Grid>
+            <Grid item xs={12} md={3}>
+              <MDInput
+                type="date"
+                label="End Date"
+                fullWidth
+                InputLabelProps={{ shrink: true }}
+                value={tempFilters.endDate || ""}
+                onChange={(e) => setTempFilters({ ...tempFilters, endDate: e.target.value })}
+              />
+            </Grid>
+            <Grid item xs={12} md={2} display="flex" alignItems="center">
+              <MDButton variant="gradient" color="info" onClick={handleSearch}>
+                Search
+              </MDButton>
+              <MDButton
+                sx={{ ml: 1 }}
+                variant="outlined"
+                color="secondary"
+                onClick={handleReset}
+              >
+                Reset
+              </MDButton>
+            </Grid>
+          </Grid>
+        </MDBox>
+      </Card>
       <MDBox pt={6} pb={3}>
         <Card>
           <MDBox

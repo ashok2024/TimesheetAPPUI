@@ -158,7 +158,7 @@ function Tables() {
       department: "",
       role: "",
       dateOfJoining: "",
-      password: "Test@123",
+      password: "@mishra.123",
     });
     setOpen(true);
   };
