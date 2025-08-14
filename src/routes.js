@@ -46,6 +46,7 @@ import SignIn from "layouts/authentication/sign-in";
 import SignUp from "layouts/authentication/sign-up";
 import Projects from "layouts/Projects";
 import ProjectDetails from "layouts/Projects/ProjectDetails";
+import Timesheet  from "layouts/TimeSheet/Timesheet";
 // @mui icons
 import Icon from "@mui/material/Icon";
 
@@ -80,6 +81,14 @@ const routes = [
     key: "project-details",
     route: "/project/:id",
     component: <ProjectDetails />,
+  },
+   {
+    type: "collapse",
+    name: "TimeSheet",
+    key: "timesheet",
+    icon: <Icon fontSize="small">access_time</Icon>,
+    route: "/timesheet",
+    component: <Timesheet />
   },
   {
     type: "route",

@@ -23,6 +23,7 @@ export const isTokenExpired = (token) => {
 
 export const getUserRole = (token) => {
   try {
+    debugger;
     const decoded = jwtDecode(token);
     return decoded.role || null;
   } catch (err) {

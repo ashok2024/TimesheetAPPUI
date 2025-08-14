@@ -3,7 +3,9 @@ import axiosInstance from "../utils/axiosInstance";
 //  GET: /api/Projects
 export const getProjects = async (page = 1, pageSize = 10) => {
   try {
-    const response = await axiosInstance.get(`/Projects/paginated?page=${page}&pageSize=${pageSize}`);
+    const response = await axiosInstance.get(
+      `/Projects/paginated?page=${page}&pageSize=${pageSize}`
+    );
     const { data, total } = response.data;
     return { data, totalCount: total };
   } catch (error) {
@@ -16,7 +18,7 @@ export const getProjects = async (page = 1, pageSize = 10) => {
 };
 export const getFilteredProjects = async (page, pageSize, filters) => {
   try {
-    debugger;;
+    debugger;
     const queryParams = new URLSearchParams({
       page: page.toString(),
       pageSize: pageSize.toString(),
@@ -25,7 +27,9 @@ export const getFilteredProjects = async (page, pageSize, filters) => {
       endDate: filters.endDate || "",
     });
 
-    const response = await axiosInstance.get(`/Projects/filtered-paginated?${queryParams.toString()}`);
+    const response = await axiosInstance.get(
+      `/Projects/filtered-paginated?${queryParams.toString()}`
+    );
     const { data, total } = response.data;
     return { data, totalCount: total };
   } catch (error) {
@@ -94,4 +98,17 @@ export const exportProjectsCsv = async (filters) => {
     responseType: "blob",
   });
   return response;
+};
+// GET: /api/Projects/by-user/{userId}
+export const getProjectsByUserId = async (userId) => {
+  try {
+    const response = await axiosInstance.get(`/Projects/by-user/${userId}`);
+    return response.data; // This should already be a List<ProjectDto>
+  } catch (error) {
+    console.error(`Error fetching projects for user ID ${userId}:`, error);
+    if (error.response?.status === 401) {
+      window.location.href = "/authentication/sign-in";
+    }
+    return [];
+  }
 };

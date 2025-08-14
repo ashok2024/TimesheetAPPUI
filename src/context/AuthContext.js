@@ -1,47 +1,70 @@
-import React, { createContext, useState, useEffect } from "react";
-import { getCurrentUser } from "../api/auth";
-import { jwtDecode } from "jwt-decode";
-import PropTypes from "prop-types";
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { jwtDecode } from 'jwt-decode';
 
-export const AuthContext = createContext();
+// Create and EXPORT the AuthContext
+export const AuthContext = createContext(null); // <-- This is the key change
 
 export const AuthProvider = ({ children }) => {
-  const [authToken, setAuthToken] = useState(localStorage.getItem("token"));
   const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const login = (token) => {
-    debugger;
-    localStorage.setItem("token", token);
-    setAuthToken(token);
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const decoded = jwtDecode(token);
+        const role = decoded["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"] || decoded.role || "User";
+        const userId = decoded.UserId || decoded.userId;
+        const sub = decoded.sub;
+
+        setUser({ token, role, userId, email: sub });
+      } catch (error) {
+        console.error("Failed to decode token from localStorage:", error);
+        localStorage.removeItem('token');
+      }
+    }
+    setLoading(false);
+  }, []);
+
+  const login = (newToken) => {
+    localStorage.setItem('token', newToken);
+    try {
+      const decoded = jwtDecode(newToken);
+      const role = decoded["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"] || decoded.role || "User";
+      const userId = decoded.UserId || decoded.userId;
+      const sub = decoded.sub;
+      setUser({ token: newToken, role, userId, email: sub });
+    } catch (error) {
+      console.error("Login failed: Invalid token", error);
+      localStorage.removeItem('token');
+      setUser(null);
+    }
   };
 
   const logout = () => {
-    localStorage.removeItem("token");
-    setAuthToken(null);
+    localStorage.removeItem('token');
     setUser(null);
   };
 
-  useEffect(() => {
-    if (authToken) {
-      try {
-        const decoded = jwtDecode(authToken);
-        setUser(decoded);
-        getCurrentUser(authToken)
-          .then((res) => setUser(res.data))
-          .catch(() => logout());
-      } catch (err) {
-        logout();
-      }
-    }
-  }, [authToken]);
+  const authContextValue = {
+    user,
+    isAuthenticated: !!user,
+    login,
+    logout,
+    loading,
+  };
 
   return (
-    <AuthContext.Provider value={{ authToken, user, login, logout }}>
+    <AuthContext.Provider value={authContextValue}>
       {children}
     </AuthContext.Provider>
   );
 };
 
-AuthProvider.propTypes = {
-  children: PropTypes.node.isRequired,
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
 };

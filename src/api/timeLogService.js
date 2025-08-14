@@ -81,3 +81,36 @@ export const getTimeLogsByTaskAndUser = async (taskId, userId) => {
     throw error;
   }
 };
+
+export const getTimeLogsByUser = async (userId) => {
+  try {
+    if (!userId) throw new Error("userId is undefined or null");
+
+    const url = `/timesheet/by-user?userId=${encodeURIComponent(userId)}`;
+    console.log("Calling:", url);
+
+    const res = await axiosInstance.get(url);
+    return res.data;
+  } catch (error) {
+    console.error("Error fetching time logs by user:", error);
+    throw error;
+  }
+};
+export const exportTimeLogByuser = async (userId) => {
+  try {
+    if (!userId) throw new Error("userId is undefined or null");
+
+    const url = `/timesheet/export-csv-by-user?userId=${userId}`;
+    console.log("Calling:", url);
+
+    const response = await axiosInstance.get(url, {
+      responseType: "blob", // CSV will come as binary
+    });
+    return response;
+  } catch (error) {
+    console.error("Error exporting tasks CSV by user:", error);
+    throw error;
+  }
+};
+
+

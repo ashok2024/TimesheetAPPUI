@@ -24,7 +24,7 @@ import MDButton from "components/MDButton";
 import BasicLayout from "layouts/authentication/components/BasicLayout";
 
 // Context and API
-import { AuthContext } from "context/AuthContext";
+import { AuthContext } from "context/AuthContext"; // Correctly imported AuthContext
 import { loginAPI } from "api/auth";
 
 // Images
@@ -37,23 +37,24 @@ function Basic() {
   const [username, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null); // State for error messages
 
-  const { login } = useContext(AuthContext);
+  const { login } = useContext(AuthContext); // Destructure login function from AuthContext
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setError(null); // Clear previous errors
     try {
-      debugger;
       const res = await loginAPI(username, password);
-      debugger;
-      //login(res.data.token);
-     // login(res.data.token);
-      localStorage.setItem("token", res.data.token); // Save token in context
-      navigate("/dashboard"); // Navigate to dashboard
+      // Instead of directly setting localStorage, call the login function from AuthContext
+      login(res.data.token); // This will handle setting localStorage and updating context state
+      navigate("/dashboard"); // Navigate to dashboard on successful login
     } catch (err) {
-      alert("Invalid email or password");
+      console.error("Login error:", err);
+      // Set a user-friendly error message
+      setError("Invalid email or password. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -128,6 +129,14 @@ function Basic() {
                 &nbsp;&nbsp;Remember me
               </MDTypography>
             </MDBox>
+            {/* Display error message if it exists */}
+            {error && (
+              <MDBox mt={2} mb={1}>
+                <MDTypography variant="caption" color="error" textAlign="center" display="block">
+                  {error}
+                </MDTypography>
+              </MDBox>
+            )}
             <MDBox mt={4} mb={1}>
               <MDButton variant="gradient" color="info" fullWidth type="submit" disabled={loading}>
                 {loading ? "Signing in..." : "Sign in"}

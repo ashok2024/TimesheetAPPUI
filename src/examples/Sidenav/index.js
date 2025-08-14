@@ -13,8 +13,7 @@ Coded by www.creative-tim.com
 * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 */
 
-import { useEffect } from "react";
-
+import { useEffect, useState } from "react";
 // react-router-dom components
 import { useLocation, NavLink } from "react-router-dom";
 
@@ -38,7 +37,8 @@ import SidenavCollapse from "examples/Sidenav/SidenavCollapse";
 // Custom styles for the Sidenav
 import SidenavRoot from "examples/Sidenav/SidenavRoot";
 import sidenavLogoLabel from "examples/Sidenav/styles/sidenav";
-
+import { menusByRole } from "menuConfig";
+import {getUserRoleFromUtils} from "utils/jwtUtils"
 // Material Dashboard 2 React context
 import {
   useMaterialUIController,
@@ -46,13 +46,14 @@ import {
   setTransparentSidenav,
   setWhiteSidenav,
 } from "context";
+import { IMPORT } from "stylis";
 
 function Sidenav({ color, brand, brandName, routes, ...rest }) {
   const [controller, dispatch] = useMaterialUIController();
   const { miniSidenav, transparentSidenav, whiteSidenav, darkMode, sidenavColor } = controller;
   const location = useLocation();
   const collapseName = location.pathname.replace("/", "");
-
+  const [menuItems, setMenuItems] = useState([]);
   let textColor = "white";
 
   if (transparentSidenav || (whiteSidenav && !darkMode)) {
@@ -65,6 +66,9 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
 
   useEffect(() => {
     // A function that sets the mini state of the sidenav.
+   const role = getUserRoleFromToken();
+    if (role && menusByRole[role]) setMenuItems(menusByRole[role]);
+    
     function handleMiniSidenav() {
       setMiniSidenav(dispatch, window.innerWidth < 1200);
       setTransparentSidenav(dispatch, window.innerWidth < 1200 ? false : transparentSidenav);
@@ -83,6 +87,12 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
     return () => window.removeEventListener("resize", handleMiniSidenav);
   }, [dispatch, location]);
 
+  const getUserRoleFromToken = () => {
+    const token = localStorage.getItem("token");
+    if (!token) return null;
+    const decoded = getUserRoleFromUtils(token);
+    return decoded.role; // e.g., "Admin"
+  };
   // Render all the routes from the routes.js (All the visible items on the Sidenav)
   const renderRoutes = routes.map(({ type, name, icon, title, noCollapse, key, href, route }) => {
     let returnValue;
@@ -139,6 +149,78 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
 
     return returnValue;
   });
+const renderMenu = menuItems.map(
+  ({ type = "collapse", name, icon, title, noCollapse, key, href, path, children }) => {
+    let returnValue;
+
+    if (type === "collapse") {
+      returnValue = href ? (
+        <Link
+          href={href}
+          key={key || name}
+          target="_blank"
+          rel="noreferrer"
+          sx={{ textDecoration: "none" }}
+        >
+          <SidenavCollapse
+            name={name}
+            icon={icon}
+            active={path === location.pathname}
+            noCollapse={noCollapse}
+          />
+        </Link>
+      ) : (
+        <NavLink key={key || name} to={path}>
+          <SidenavCollapse
+            name={name}
+            icon={icon}
+            active={path === location.pathname}
+            noCollapse={noCollapse}
+          />
+        </NavLink>
+      );
+    } else if (type === "title") {
+      returnValue = (
+        <MDTypography
+          key={key || name}
+          color={textColor}
+          display="block"
+          variant="caption"
+          fontWeight="bold"
+          textTransform="uppercase"
+          pl={3}
+          mt={2}
+          mb={1}
+          ml={1}
+        >
+          {title}
+        </MDTypography>
+      );
+    } else if (type === "divider") {
+      returnValue = (
+        <Divider
+          key={key || name}
+          light={
+            (!darkMode && !whiteSidenav && !transparentSidenav) ||
+            (darkMode && !transparentSidenav && whiteSidenav)
+          }
+        />
+      );
+    }
+
+    // Handle nested children
+    if (children && children.length > 0) {
+      return (
+        <div key={key || name}>
+          {returnValue}
+          <List sx={{ pl: 3 }}>{children.map(renderMenu)}</List>
+        </div>
+      );
+    }
+
+    return returnValue;
+  }
+);
 
   return (
     <SidenavRoot
@@ -160,7 +242,7 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
             <Icon sx={{ fontWeight: "bold" }}>close</Icon>
           </MDTypography>
         </MDBox>
-        <MDBox  display="flex" alignItems="center">
+        <MDBox display="flex" alignItems="center">
           {brand && <MDBox component="img" src={brand} alt="Brand" width="2rem" />}
           <MDBox
             width={!brandName && "100%"}
@@ -178,7 +260,7 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
           (darkMode && !transparentSidenav && whiteSidenav)
         }
       />
-      <List>{renderRoutes}</List>
+      <List>{renderMenu}</List>
     </SidenavRoot>
   );
 }
